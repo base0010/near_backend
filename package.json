@@ -1,0 +1,31 @@
+{
+  "name": "backend",
+  "version": "1.0.0",
+  "main": "index.js",
+  "license": "MIT",
+  "dependencies": {
+    "@nestjs/common": "^6.11.1",
+    "@nestjs/core": "^6.11.1",
+    "@nestjs/platform-express": "^6.11.1",
+    "@nestjs/platform-socket.io": "^6.11.1",
+    "@nestjs/platform-ws": "^6.11.1",
+    "@nestjs/typeorm": "^6.2.0",
+    "@nestjs/websockets": "^6.11.1",
+    "@types/node": "^13.5.0",
+    "@types/promise.allsettled": "^1.0.2",
+    "@types/socket.io": "^2.1.4",
+    "@types/ws": "^7.2.0",
+    "path": "^0.12.7",
+    "promise.allsettled": "^1.0.2",
+    "rxjs": "^6.5.4",
+    "socket.io": "^2.3.0",
+    "sqlite3": "^4.1.1",
+    "typeorm": "^0.2.22",
+    "ws": "^7.2.1"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "start": "node ./dist/index.js",
+    "dev": "yarn build && yarn start"
+  }
+}

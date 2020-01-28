@@ -55,7 +55,7 @@ class BlockSync {
     isPolling: boolean;
 
     constructor() {
-        this.isPolling = false
+        this.isPolling = true
         // this.start().catch(console.error)
     }
 
@@ -65,52 +65,85 @@ class BlockSync {
         //db repository
         if (this.connection) {
             this.blockRepository = getBlockRepository(this.connection)
-            console.log("DB Setup Complete")
+            console.log("DB Setup Completss")
         }
         //connect to rpc
         this.provider = new NearRpc("marcus")
+
+
         this.provider.connectRPC()
         //start polling block height from RPC
-        this.isPolling = await this.provider.pollLatestBlock()
+        // this.isPolling = await this.provider.pollLatestBlock()
 
 
-    }
 
-    async  saveBlocksFromRequests(requests:any[]) {
-        console.log('insidesave')
-        const responses = await Promise.all(requests.map(([_, req]) => req));
-        const blocks = responses.flatMap((blockResult:any, index) => {
-            const blockHeight = requests[index][0];
-            if(blockResult.value)
-                console.log(blockResult)
-            return [blockResult.value];
-        })
     }
 
     async getBlocks(startingBlock: number, endingBlock: number) {
         if (this.isPolling) {
-            let height = 10
-            const requests = []
+            let height = 1000
+
+            const requests:any[] = []
+
             const saves = []
 
             while(height > 0){
+                console.log(requests.length)
                 requests.push([height,promiseResult(this.provider.getBlock(height))])
                 --height;
-
-                saves.push(this.saveBlocksFromRequests(requests))
+                // saves.push(this.saveBlocksFromRequests(requests))
 
             }
+           let responses =  await Promise.all(requests.map(([_,res])=> res))
+            responses.map((re)=>{
+                console.log(re.val.header.hash)
+            })
+        }
+    }
 
-            await Promise.all(saves)
+
+    async getBlockRange(start:number, end:number) {
+        if (start > end) {return}
+        const MAX_CONCURRENT_REQUESTS = 1000
+        let delta = end - start
+        const runs = delta/MAX_CONCURRENT_REQUESTS + 1;
+
+        let height = start;
+        for(let i = 1; i < runs; i++) {
+            let requests: any[] = []
+            let numReqs = delta < MAX_CONCURRENT_REQUESTS? delta: MAX_CONCURRENT_REQUESTS;
+            console.log(requests.length)
+
+            for(let j = 0; j < numReqs; j++) {
+                requests.push([height, promiseResult(this.provider.getBlock(height))])
+                delta--
+                height++
+            }
+            let responses =  await Promise.all(requests.map(([_,res])=> res))
+            responses.map((f)=>{
+                if(f.val){
+                    console.log(f.val.header.hash)
+                    // this.blockRepository.createAndSave({id:f.val.header.height,hash:f.val.header.hash})
+                }
+            })
+            requests.length = 0
         }
     }
 }
 
 const sync = new BlockSync()
 
- sync.start().then(async function(){
-     await sync.getBlocks(1,100000)
- })
+sync.start().then(async()=>{
+    console.log("started")
+
+    // let res:any[]= []
+    // for(let i=0; i< 150; i++){
+    //    let b = await  sync.provider.getBlock(i)
+    //     console.log(b)
+    // }
+    await sync.getBlockRange(1,2000)
+
+})
 
 // bootstrapServer().catch(console.error)
 // async function testRPCConnection()

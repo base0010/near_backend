@@ -7,13 +7,6 @@ import {NestFactory} from "@nestjs/core";
 import {IoAdapter} from "@nestjs/platform-socket.io";
 import {BlocksModule} from "./api/blocks/blocks.module";
 
-const connOpts:ConnectionOptions = {
-    type: "sqlite",
-    database: "./database/db.sqlite",
-    entities: [Blocks,Transactions],
-    logging:true,
-    synchronize: true
-}
 
 type NearConfig  = {
     networkId:string;
@@ -62,6 +55,7 @@ export class NearRpc {
         return this.provider.block(block)
     }
      async getLatestBlock():Promise<number>{
+
         const status =  await this.provider.status()
          const blockHeight =  status.sync_info.latest_block_height
          return blockHeight
@@ -75,7 +69,7 @@ export class NearRpc {
                     resolve(true)
                 // await blockRepository.createAndSave({id:res.header.height,hash:res.header.hash})
             }
-        },1000))
+        },this.statusPollTime))
 
     }
 
