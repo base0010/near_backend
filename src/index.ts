@@ -1,5 +1,5 @@
-import { ConnectionOptions, createConnection ,getConnection,getRepository} from "typeorm"
-import { Block,Transactions } from "./database/entity/models"
+import {Connection, ConnectionOptions, createConnection, getConnection, getRepository} from "typeorm"
+import { Blocks,Transactions } from "./database/entity/models"
 import {BlockRepository} from "./database/entity/BlockRepository";
 import {NestFactory} from "@nestjs/core";
 // import {WsAdapter} from '@nestjs/platform-ws'
@@ -16,7 +16,7 @@ async function bootstrapServer() {
 const connOpts:ConnectionOptions = {
     type: "sqlite",
     database: "./database/db.sqlite",
-    entities: [Block,Transactions],
+    entities: [Blocks,Transactions],
     logging:true,
     synchronize: true
 }
@@ -24,80 +24,63 @@ const connOpts:ConnectionOptions = {
 function getBlockRepository(connection:any): BlockRepository{
     return connection.getCustomRepository(BlockRepository)
 }
-async function main(){
 
-    //db connection
-    const connection = await createConnection(connOpts)
-    //db repository
-    const blockRepository = getBlockRepository(connection)
+class BlockSync {
+    connection!:Connection
+    blockRepository!:BlockRepository
+    provider!:NearRpc
 
-    let provider = new NearRpc("marcus")
-    provider.connectRPC()
+    isPolling:boolean = false;
 
-    const pollLatestBlock = async function(){
-        setInterval(async()=> {
-            const latest = await provider.getLatestBlock()
-            if(provider.highestBlock !== latest) {
-                provider.highestBlock = latest
-                const res = await provider.getBlock(provider.highestBlock)
-                console.log(res.header.hash)
-                await blockRepository.createAndSave({id:res.header.height,hash:res.header.hash})
-            }
-        },1000)
+    constructor() {
+    }
+
+    async start() {
+        //db connection
+        this.connection = await createConnection(connOpts)
+        //db repository
+        if (this.connection) {
+            this.blockRepository = getBlockRepository(this.connection)
+            console.log("DB Setup Complete")
+        }
+        //connect to rpc
+        this.provider = new NearRpc("marcus")
+        this.provider.connectRPC()
+        //start polling block height from RPC
+        this.isPolling = await this.provider.pollLatestBlock()
+
 
     }
- await pollLatestBlock()
+    async getBlocks(){
+        if(this.isPolling){
+            const MAX_PROMISES = 500
 
-    // const latestRpcBlock = async function(){
-    //     setInterval(async()=> {
-    //         const latest = await provider.getLatestBlock()
-    //         if(provider.highestBlock !== latest) {
-    //             provider.highestBlock = latest
-    //             const res = await provider.getBlock(provider.highestBlock)
-    //             console.log(res.header.hash)
-    //             await blockRepository.createAndSave({id:res.header.height,hash:res.header.hash})
-    //         }
-    //     },1000)
-    // }
-    while(1==1){
-        let RpcHighest = provider.highestBlock
-        let DbHighest = await blockRepository.getHighestBlockSaved();
-        let delta = RpcHighest - DbHighest
-        console.log(`we need to get ${delta} blocks from the rpc`)
-        let getCount = 0;
-        let promiseArray = [];
-            for (let i = 0; i <= delta; i++) {
-                if(getCount < 1000) {
-                    let blockToGet = DbHighest + delta
-                    promiseArray.push(await provider.getBlock(blockToGet))
-                    getCount++
+
+            let responses = []
+            for(let i = 0; i < MAX_PROMISES; i++){
+                responses.push(this.provider.getBlock(i))
+            }
+            let results = await Promise.all(responses)
+
+            let self = this
+            results.map(async function(res){
+                try {
+                    await self.blockRepository.createAndSave({id: res.header.height, hash: res.header.hash})
+                }catch (e) {
+                    console.error(e)
                 }
-            }
-            let blockArr = await Promise.all(promiseArray)
-            console.log(blockArr)
 
-
+        })
     }
-
-
-    // const bRange = 100
-    // for(let i = 0; i < bRange; i++){
-    //     let block = await provider.getBlock(i)
-    //     let tmpBlock = {
-    //         hash: block.header.hash,
-    //         id: i
-    //     }
-    //     console.log("saving block ",i)
-    //     await blockRepository.createAndSave(tmpBlock)
-    // }
-    //
-
-
-
-
+    }
 }
 
-main().catch(console.error)
+const sync = new BlockSync()
+
+ sync.start().then(async function(){
+     await sync.getBlocks()
+ })
+
 // bootstrapServer().catch(console.error)
 // async function testRPCConnection()
 // {

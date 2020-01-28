@@ -1,6 +1,6 @@
 import * as nearlib from 'nearlib'
 import { ConnectionOptions, createConnection ,getConnection,getRepository} from "typeorm"
-import { Block,Transactions } from "./database/entity/models"
+import { Blocks,Transactions } from "./database/entity/models"
 import {BlockRepository} from "./database/entity/BlockRepository";
 import {NestFactory} from "@nestjs/core";
 // import {WsAdapter} from '@nestjs/platform-ws'
@@ -10,7 +10,7 @@ import {BlocksModule} from "./api/blocks/blocks.module";
 const connOpts:ConnectionOptions = {
     type: "sqlite",
     database: "./database/db.sqlite",
-    entities: [Block,Transactions],
+    entities: [Blocks,Transactions],
     logging:true,
     synchronize: true
 }
@@ -64,8 +64,20 @@ export class NearRpc {
      async getLatestBlock():Promise<number>{
         const status =  await this.provider.status()
          const blockHeight =  status.sync_info.latest_block_height
-         console.log(blockHeight)
          return blockHeight
      }
+    async pollLatestBlock():Promise<boolean>{
+        //we resolve on the initial Rpc Block Height recieved and keep polling
+        return new Promise(resolve => setInterval(async()=> {
+            const latest = await this.getLatestBlock()
+            if(this.highestBlock < latest) {
+                this.highestBlock = latest
+                    resolve(true)
+                // await blockRepository.createAndSave({id:res.header.height,hash:res.header.hash})
+            }
+        },1000))
+
+    }
+
 
 }

@@ -13,8 +13,8 @@ export class Transactions extends Content{
     transactionType!: string
 
 }
-@Entity('Block')
-export class Block extends Content{
+@Entity('Blocks')
+export class Blocks extends Content{
 
     @ManyToOne(type => Transactions)
 

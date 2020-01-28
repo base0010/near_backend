@@ -2,7 +2,7 @@ import {
     EntityRepository, Repository, getRepository
 } from "typeorm";
 
-import {Block} from "./models";
+import {Blocks} from "./models";
 
 
 //SQlite dosen't support enum datatype out of the box
@@ -28,31 +28,31 @@ export function normalizeNumber(
     return ret!;
 }
 
-@EntityRepository(Block)
-export class BlockRepository extends Repository<Block>{
+@EntityRepository(Blocks)
+export class BlockRepository extends Repository<Blocks>{
 
-    async createAndSave(block:Block): Promise<number>{
-        let b = new Block()
+    async createAndSave(block:Blocks): Promise<number>{
+        let b = new Blocks()
         b.transactions = block.transactions
         b.hash = block.hash
         b.id = normalizeNumber(block.id, 'badblocknum')
         await this.save(b)
         return b.id;
     }
-    async allBlocks():Promise<Block[]>{
+    async allBlocks():Promise<Blocks[]>{
         let blocks = await this.find()
         return blocks;
 
     }
-    async findOneBlock(id:number):Promise<Block | undefined>{
+    async findOneBlock(id:number):Promise<Blocks | undefined>{
         let block = await this.findOne({
             where: {id:id}
         })
 
         return block;
     }
-    async deleteBlock(block:number | Block){
-        await this.manager.delete(Block, typeof block === 'number'?
+    async deleteBlock(block:number | Blocks){
+        await this.manager.delete(Blocks, typeof block === 'number'?
                                     block:block.id)
     }
     async getHighestBlockSaved(){
