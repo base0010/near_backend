@@ -7,10 +7,12 @@ import * as allSettled from 'promise.allsettled'
 import {IoAdapter} from "@nestjs/platform-socket.io";
 import {BlocksModule} from "./api/blocks/blocks.module";
 import {NearRpc} from './nearRpc'
+import {BlockHeader, BlockResult, ChunkHeader, ChunkResult} from "nearlib/lib/providers/provider";
 
 
 class Result{
-    val:any;
+    // val:BlockResult|undefined;
+    val:any
     err:any;
     constructor() {
         this.val = undefined
@@ -76,59 +78,112 @@ class BlockSync {
         // this.isPolling = await this.provider.pollLatestBlock()
 
 
-
     }
 
     async getBlocks(startingBlock: number, endingBlock: number) {
         if (this.isPolling) {
             let height = 1000
 
-            const requests:any[] = []
+            const requests: any[] = []
 
             const saves = []
 
-            while(height > 0){
+            while (height > 0) {
                 console.log(requests.length)
-                requests.push([height,promiseResult(this.provider.getBlock(height))])
+                requests.push([height, promiseResult(this.provider.getBlock(height))])
                 --height;
                 // saves.push(this.saveBlocksFromRequests(requests))
 
             }
-           let responses =  await Promise.all(requests.map(([_,res])=> res))
-            responses.map((re)=>{
+            let responses = await Promise.all(requests.map(([_, res]) => res))
+            responses.map((re) => {
                 console.log(re.val.header.hash)
             })
         }
     }
 
+    async getChunkTxsForBlock(fufilled:Result[]){
 
-    async getBlockRange(start:number, end:number) {
-        if (start > end) {return}
+        let chunkWTxs: any = fufilled.map((fufilledResult)=> {
+            fufilledResult.val.chunks.map((chunk:ChunkHeader)=>{
+                if(chunk.encoded_length>8){
+                    return([fufilledResult.val.header,promiseResult(this.provider.provider.chunk(chunk.chunk_hash))])
+
+                }
+            })
+        })
+
+        let chunkswithTxns = await Promise.all(chunkWTxs.map((chunks: any)=>chunks))
+
+        console.log(chunkswithTxns)
+
+
+    }
+
+
+    async getBlockRange(start: number, end: number) {
+        if (start > end) {
+            return
+        }
         const MAX_CONCURRENT_REQUESTS = 1000
         let delta = end - start
-        const runs = delta/MAX_CONCURRENT_REQUESTS + 1;
-
+        const runs = delta / MAX_CONCURRENT_REQUESTS + 1;
         let height = start;
-        for(let i = 1; i < runs; i++) {
+        for (let i = 1; i < runs; i++) {
             let requests: any[] = []
-            let numReqs = delta < MAX_CONCURRENT_REQUESTS? delta: MAX_CONCURRENT_REQUESTS;
-            console.log(requests.length)
-
-            for(let j = 0; j < numReqs; j++) {
+            let numReqs = delta < MAX_CONCURRENT_REQUESTS ? delta : MAX_CONCURRENT_REQUESTS;
+            for (let j = 0; j < numReqs; j++) {
                 requests.push([height, promiseResult(this.provider.getBlock(height))])
                 delta--
                 height++
             }
-            let responses =  await Promise.all(requests.map(([_,res])=> res))
-            responses.map((f)=>{
-                if(f.val){
-                    console.log(f.val.header.hash)
-                    // this.blockRepository.createAndSave({id:f.val.header.height,hash:f.val.header.hash})
-                }
+            let responses = await Promise.all(requests.map(([_, res]) => res))
+            //filter responses for accounts
+
+            let responseValues = responses.filter(response=>response.val !== undefined).map(response=>{
+                return response.val
             })
+
+           let bigChunks = responseValues.flatMap((res)=>{
+                let chunks = res.chunks
+                 return chunks.filter((chunk: { encoded_length: number; })=>chunk.encoded_length>8)
+            })
+
+
+            let blockByChunks = await Promise.all(bigChunks.map(async(chunk:ChunkHeader)=>{
+                const blockHeight = chunk.height_included
+                const dets = await this.provider.provider.chunk(chunk.chunk_hash)
+                return{height:blockHeight,chunk_details:dets}
+                }
+            ))
+
+            const bByChunksWTxs = blockByChunks.filter(bc=>bc.chunk_details.transactions.length > 0)
+
+
+
+            let hasCA = bByChunksWTxs.flatMap((v)=>{
+                if(v.chunk_details.transactions.filter((tx)=>{
+                    // @ts-ignore
+                    return tx.actions !== undefined && tx.actions.includes("CreateAccount")
+                    }
+                ))
+                {
+                    return v
+                }
+
+            })
+
+
+            hasCA.map((caTx)=>{
+                // @ts-ignore
+                console.log(`Found CA TX in block ${caTx.height}`)
+            })
+
             requests.length = 0
         }
+
     }
+
 }
 
 const sync = new BlockSync()
@@ -141,10 +196,10 @@ sync.start().then(async()=>{
     //    let b = await  sync.provider.getBlock(i)
     //     console.log(b)
     // }
-    await sync.getBlockRange(1,2000)
+
+    await sync.getBlockRange(700000,750000)
 
 })
-
 // bootstrapServer().catch(console.error)
 // async function testRPCConnection()
 // {

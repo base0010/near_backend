@@ -6,6 +6,7 @@ import {NestFactory} from "@nestjs/core";
 // import {WsAdapter} from '@nestjs/platform-ws'
 import {IoAdapter} from "@nestjs/platform-socket.io";
 import {BlocksModule} from "./api/blocks/blocks.module";
+import {BlockResult} from "nearlib/lib/providers/provider";
 
 
 type NearConfig  = {
@@ -18,7 +19,8 @@ type NearConfig  = {
 export class NearRpc {
     accountName:string;
     nearConfig:NearConfig;
-    private provider!:nearlib.providers.JsonRpcProvider;
+
+    provider!:nearlib.providers.JsonRpcProvider;
     statusPollTime:number = 1000;
 
     highestBlock:number = 0;
@@ -51,7 +53,7 @@ export class NearRpc {
          this.provider = new nearlib.providers.JsonRpcProvider(this.nearConfig.nodeUrl)
 
      }
-    async getBlock(block:number){
+    async getBlock(block:number):Promise<BlockResult>{
         return this.provider.block(block)
     }
      async getLatestBlock():Promise<number>{
