@@ -2,6 +2,7 @@ import {NearRpc} from './nearRpc'
 import {BlockHeader, BlockResult, ChunkHeader, ChunkResult} from "nearlib/lib/providers/provider";
 import {Result,promiseResult} from "./utils";
 import {Server} from "./database/Server";
+import {Block,Transaction} from "./database/entity/models";
 
 class BlockSync {
     provider: NearRpc
@@ -38,14 +39,28 @@ class BlockSync {
         // @ts-ignore
         bByChunksWTxs.flatMap((v)=> {
             // @ts-ignore
-            v.chunk_details.transactions.map((tx)=>{
+            v.chunk_details.transactions.map(async(tx:any,index)=>{
                 if(tx.actions.includes("CreateAccount")){
-
                     // @ts-ignore
-                    console.log(`Found Account @ ${v.height}`)
-                    console.log(tx.receiver_id)
+                    const t = new Transaction()
+                    t.rName = tx.receiver_id
+                    //@ts-ignore
+                    t.id = index + v.height
+                    t.transactionType = "CreateAccount"
 
-                    this.server.blockRepository.createAndSave({id:1, height:1, transactions:{id:1, transactionType:"CreateAccount",recieverName:tx.receiver_id}})
+                    const block = new Block()
+                    // @ts-ignore
+                    block.id = v.height
+                    // @ts-ignore
+
+                    block.height = v.height
+                    block.transactions = [t]
+
+                    return await this.server.saveBlockAndTransaction(t,block)
+
+                    // await this.server.blockRepository.createAndSave()
+                    // this.server.blockRepository.save()
+                    // await this.server.blockRepository.createAndSave({id:v.height, height:v.height}, {transactionType:"CreateAccount",rName:"s",id:v.height})
 
                     }
                 }
@@ -68,6 +83,7 @@ class BlockSync {
         const runs = delta / this.MAX_CONCURRENT_REQUESTS + 1;
         let height = start;
         for (let i = 1; i < runs; i++) {
+            console.log(height)
             let requests: any[] = []
             let numReqs = delta < this.MAX_CONCURRENT_REQUESTS ? delta : this.MAX_CONCURRENT_REQUESTS;
             for (let j = 0; j < numReqs; j++) {
@@ -93,9 +109,9 @@ sync.init().then(async()=>{
     console.log("started")
 
     //todo:end off by one
-
-    await sync.getBlockRange(748270,748274);
-
+    console.time()
+    await sync.getBlockRange(740000,750000);
+    console.timeEnd()
 })
 // bootstrapServer().catch(console.error)
 // async function testRPCConnection()

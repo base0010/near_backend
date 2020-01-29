@@ -2,7 +2,8 @@ import {
     EntityRepository, Repository, getRepository
 } from "typeorm";
 
-import {Blocks} from "./models";
+import {Block,Transaction} from "./models";
+import {getConnection} from "typeorm";
 
 
 //SQlite dosen't support enum datatype out of the box
@@ -28,31 +29,53 @@ export function normalizeNumber(
     return ret!;
 }
 
-@EntityRepository(Blocks)
-export class BlockRepository extends Repository<Blocks>{
+@EntityRepository(Block)
+export class BlockRepository extends Repository<Block>{
 
-    async createAndSave(block:Blocks): Promise<number>{
-        let b = new Blocks()
-        b.transactions = block.transactions
-        b.id = normalizeNumber(block.id, 'badblocknum')
-
-        await this.save(b)
-        return b.id;
-    }
-    async allBlocks():Promise<Blocks[]>{
+    // async createAndSave(block:any): Promise<number>{
+    //
+    //     // const b = new Block();
+    //     // b.id = 2
+    //     // b.height = 2
+    //
+    //    //  const tx = new  Transaction()
+    //    //  tx.id = 2
+    //    //  await this.save(tx)
+    //    //  //
+    //    //  // b.transactions = [tx]
+    //    //
+    //    // // await this.save(b)
+    //    //  return  1
+    //
+    //     // const tx = new Transaction()
+    //     // tx.id = 10
+    //     // tx.rName = 'steve'
+    //     // tx.transactionType = "CA"
+    //     // await this.save(tx)
+    //     //
+    //     // const b = new Block()
+    //     // block.height = 1234
+    //     // block.id = 10
+    //     // block.transactions = [tx]
+    //     // await this.save(b)
+    //     //
+    //     // return b.id
+    //
+    // }
+    async allBlocks():Promise<Block[]>{
         let blocks = await this.find()
         return blocks;
 
     }
-    async findOneBlock(id:number):Promise<Blocks | undefined>{
+    async findOneBlock(id:number):Promise<Block | undefined>{
         let block = await this.findOne({
             where: {id:id}
         })
 
         return block;
     }
-    async deleteBlock(block:number | Blocks){
-        await this.manager.delete(Blocks, typeof block === 'number'?
+    async deleteBlock(block:number | Block){
+        await this.manager.delete(Block, typeof block === 'number'?
                                     block:block.id)
     }
     async getHighestBlockSaved(){
