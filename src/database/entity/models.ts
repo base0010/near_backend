@@ -12,6 +12,9 @@ export class Transactions extends Content{
     @Column()
     transactionType!: string
 
+    @Column()
+    recieverName!:string
+
 }
 @Entity('Blocks')
 export class Blocks extends Content{
@@ -22,5 +25,6 @@ export class Blocks extends Content{
     transactions?: Transactions
 
     @Column()
-    hash!: string
+
+    height!:number
 }

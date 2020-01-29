@@ -34,8 +34,8 @@ export class BlockRepository extends Repository<Blocks>{
     async createAndSave(block:Blocks): Promise<number>{
         let b = new Blocks()
         b.transactions = block.transactions
-        b.hash = block.hash
         b.id = normalizeNumber(block.id, 'badblocknum')
+
         await this.save(b)
         return b.id;
     }

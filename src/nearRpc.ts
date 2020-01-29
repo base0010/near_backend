@@ -1,11 +1,5 @@
 import * as nearlib from 'nearlib'
-import { ConnectionOptions, createConnection ,getConnection,getRepository} from "typeorm"
-import { Blocks,Transactions } from "./database/entity/models"
-import {BlockRepository} from "./database/entity/BlockRepository";
-import {NestFactory} from "@nestjs/core";
-// import {WsAdapter} from '@nestjs/platform-ws'
-import {IoAdapter} from "@nestjs/platform-socket.io";
-import {BlocksModule} from "./api/blocks/blocks.module";
+
 import {BlockResult} from "nearlib/lib/providers/provider";
 
 
