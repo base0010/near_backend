@@ -160,25 +160,26 @@ class BlockSync {
             const bByChunksWTxs = blockByChunks.filter(bc=>bc.chunk_details.transactions.length > 0)
 
 
+            // @ts-ignore
+            let got = bByChunksWTxs.flatMap((v)=> {
 
-            let hasCA = bByChunksWTxs.flatMap((v)=>{
-                if(v.chunk_details.transactions.filter((tx)=>{
+                if (v.chunk_details.transactions.filter(tx =>
                     // @ts-ignore
-                    return tx.actions !== undefined && tx.actions.includes("CreateAccount")
-                    }
-                ))
-                {
+                    tx.actions.includes("CreateAccount")
+                )){
                     return v
                 }
 
+
+
             })
 
 
-            hasCA.map((caTx)=>{
+            got.map((i)=>{
+
                 // @ts-ignore
-                console.log(`Found CA TX in block ${caTx.height}`)
+                console.log(i.height, "\n\n",i.chunk_details.transactions[0].actions)
             })
-
             requests.length = 0
         }
 
@@ -197,7 +198,9 @@ sync.start().then(async()=>{
     //     console.log(b)
     // }
 
-    await sync.getBlockRange(700000,750000)
+    //todo:end off by one
+
+    await sync.getBlockRange(702550,702564)
 
 })
 // bootstrapServer().catch(console.error)
