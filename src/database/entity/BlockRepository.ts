@@ -32,36 +32,6 @@ export function normalizeNumber(
 @EntityRepository(Block)
 export class BlockRepository extends Repository<Block>{
 
-    // async createAndSave(block:any): Promise<number>{
-    //
-    //     // const b = new Block();
-    //     // b.id = 2
-    //     // b.height = 2
-    //
-    //    //  const tx = new  Transaction()
-    //    //  tx.id = 2
-    //    //  await this.save(tx)
-    //    //  //
-    //    //  // b.transactions = [tx]
-    //    //
-    //    // // await this.save(b)
-    //    //  return  1
-    //
-    //     // const tx = new Transaction()
-    //     // tx.id = 10
-    //     // tx.rName = 'steve'
-    //     // tx.transactionType = "CA"
-    //     // await this.save(tx)
-    //     //
-    //     // const b = new Block()
-    //     // block.height = 1234
-    //     // block.id = 10
-    //     // block.transactions = [tx]
-    //     // await this.save(b)
-    //     //
-    //     // return b.id
-    //
-    // }
     async allBlocks():Promise<Block[]>{
         let blocks = await this.find()
         return blocks;
