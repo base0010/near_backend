@@ -1,5 +1,5 @@
 import {NearRpc} from './nearRpc'
-import {BlockHeader, BlockResult, ChunkHeader, ChunkResult} from "nearlib/lib/providers/provider";
+import {ChunkHeader} from "nearlib/lib/providers/provider";
 import {promiseResult} from "./utils";
 import {Server} from "./database/Server";
 import {Block,Transaction} from "./database/entity/models";

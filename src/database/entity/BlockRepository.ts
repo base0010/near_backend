@@ -3,31 +3,7 @@ import {
 } from "typeorm";
 
 import {Block,Transaction} from "./models";
-import {getConnection} from "typeorm";
 
-
-//SQlite dosen't support enum datatype out of the box
-export type TransactionMethodsTypes = "CreatedAccount" | "Transfer"
-
-
-export enum TransactionMethods {
-    accountCreated = "CreatedAccount", transfer = "Transfer"
-
-}
-//got this from webs
-export function normalizeNumber(
-    num: number | string, errorIfNotNumber: string)
-    : number {
-    if (typeof num === 'undefined') {
-        throw new Error(`${errorIfNotNumber} -- ${num}`);
-    }
-    if (typeof num === 'number') return num;
-    let ret = parseInt(num);
-    if (isNaN(ret)) {
-        throw new Error(`${errorIfNotNumber} ${ret} -- ${num}`);
-    }
-    return ret!;
-}
 
 @EntityRepository(Block)
 export class BlockRepository extends Repository<Block>{

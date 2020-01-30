@@ -35,11 +35,11 @@ export class BlocksGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
     async handleConnection(){
         console.log('client connected')
-        this.server.emit('blocks',"fuck")
+
     }
 
     async handleDisconnect(){
-        this.server.emit('blocks', this.blocks)
+        console.log('client disconnected')
     }
 
 
