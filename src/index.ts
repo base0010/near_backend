@@ -26,6 +26,8 @@ class BlockSync {
         //look for chunks with encoded length > 8
         let bigChunks:ChunkHeader[] = responseValue.flatMap((res:any)=>{
             let chunks = res.chunks
+            let block = res.header
+
             return chunks.filter((chunk: { encoded_length: number; })=>chunk.encoded_length>8)
         })
         let blockByBigChunks = await Promise.all(bigChunks.map(async(chunk:ChunkHeader)=>{
@@ -40,11 +42,11 @@ class BlockSync {
 
         blockByBigChunksWithTxs.flatMap((heightByDetails)=> {
 
-            //the transaction types from nearlib don't matchup ? perhaps spec changed
+            //the transaction types from nearlib don't matchup on .actions & .reciever_id perhaps spec changed
             heightByDetails.chunk_details.transactions.map(async(tx:any,index)=>{
                 //do actions in the transaction include "CreateAccount"?
                 if(tx.actions.includes("CreateAccount")){
-
+                    //these could use constructors
                     const t = new Transaction()
                     t.rName = tx.receiver_id
                     t.id = index + heightByDetails.height
@@ -62,11 +64,18 @@ class BlockSync {
         )
     }
 
+    async getBlockHeights(){
+        //todo:this should return highest block saved not highest block with accounts
+        const storedHeight = await this.server.getHighestBlockSaved()
+        const rpcHeight = this.provider.highestBlock
+        return {db:storedHeight,rpc:rpcHeight}
+    }
     async getBlockToCurrentHeight(){
         //get highest from DB
-        const storedHeight = 700000
-        while(storedHeight < this.provider.highestBlock){
-            await this.getBlockRange(storedHeight,this.provider.highestBlock);
+        let height = await this.getBlockHeights()
+        while(height.db < this.provider.highestBlock){
+            await this.getBlockRange(height.db,this.provider.highestBlock).then(()=>console.log("syncedup"));
+            height = await this.getBlockHeights();
         }
     }
 
@@ -77,7 +86,7 @@ class BlockSync {
 
         let height = start;
         for (let i = 1; i < runs; i++) {
-            console.log(height)
+            // console.log(height)
             let requests: any[] = []
             let numReqs = delta < this.MAX_CONCURRENT_REQUESTS ? delta : this.MAX_CONCURRENT_REQUESTS;
             for (let j = 0; j < numReqs; j++) {
@@ -88,10 +97,10 @@ class BlockSync {
             let responses = await Promise.all(requests.map(([_, res]) => res))
             //filter responses for accounts
             //todo:better type
-            let rV:any = responses.filter(response=>response.val !== undefined).map(response=>{
+            let fufilledResponses:any = responses.filter(response=>response.val !== undefined).map(response=>{
                 return response.val
             })
-            await this.parseBlockForAccounts(rV)
+            await this.parseBlockForAccounts(fufilledResponses)
             requests.length = 0
         }
     }
@@ -104,7 +113,7 @@ sync.init().then(async()=>{
 
     //todo:end off by one
     // console.time()
-    // await sync.getBlockRange(740000,741000);
+    await sync.getBlockToCurrentHeight();
     // this.
     // console.timeEnd()
 })

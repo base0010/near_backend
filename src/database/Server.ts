@@ -1,5 +1,5 @@
 import {Connection, ConnectionOptions, createConnection, EntityManager, getManager} from "typeorm"
-import { Block,Transaction} from "./entity/models"
+import {Block,Transaction} from "./entity/models"
 import {BlockRepository} from "./entity/BlockRepository";
 import {TransactionRepository} from "./entity/TransactionRepository";
 import {NestFactory} from "@nestjs/core";
@@ -37,7 +37,7 @@ export class Server {
             this.entityManger = getManager();
             console.log("DB Connected")
         }
-        await this.bootstrapServer().then(()=>(console.debug("API Server Started")))
+        await this.bootstrapServer().then(()=>(console.debug("WS API Server Started")))
 
     }
     async saveBlockAndTransaction(tx:Transaction,block:Block){
@@ -48,5 +48,12 @@ export class Server {
             console.log(e)
             throw e;
         }
+    }
+    async getHighestBlockSaved(){
+        const query = this.entityManger.createQueryBuilder(Block,"Block")
+        query.select("MAX(Block.id)", "max")
+        const res = await query.getRawOne();
+        console.log(`Highest Block With TXs in DB ${res.max}`)
+        return res.max;
     }
 }

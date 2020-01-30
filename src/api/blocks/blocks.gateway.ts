@@ -4,7 +4,7 @@ import {
 } from '@nestjs/websockets';
 import {Server, Client, Socket} from 'socket.io'
 import {getManager,EntityManager} from "typeorm"
-import {Transaction,Block} from "../../database/entity/models";
+import {Transaction} from "../../database/entity/models";
 
 @WebSocketGateway()
 export class BlocksGateway implements OnGatewayConnection, OnGatewayDisconnect {
@@ -27,14 +27,13 @@ export class BlocksGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @SubscribeMessage('accountsInBlock')
     async getAccountsInBlock(@MessageBody() msg:number, @ConnectedSocket() client:Socket){
 
-        console.log(`querying paraticular block ${msg}`)
+        console.log(`querying block ${msg} for accounts`)
         let query = await this.entityManager.query(`SELECT COUNT(DISTINCT("Transaction"."rName")) as "cnt" FROM "Transaction" WHERE "Transaction"."cId" = ${msg}`)
         console.log(query)
         this.server.emit('returnAccountsInBlock', query)
     }
 
     async handleConnection(){
-        // this.blocks++;
         console.log('client connected')
         this.server.emit('blocks',"fuck")
     }
